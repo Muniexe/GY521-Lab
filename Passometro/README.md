@@ -62,10 +62,10 @@ Versão recomendada:
 Python 3.12
 
 2. Instalar Dependências
-py -3.12 -m pip install pygame
-py -3.12 -m pip install pyserial
-py -3.12 -m pip install PyOpenGL
-py -3.12 -m pip install PyOpenGL_accelerate
+`py -3.12 -m pip install pygame`
+`py -3.12 -m pip install pyserial`
+`py -3.12 -m pip install PyOpenGL`
+`py -3.12 -m pip install PyOpenGL_accelerate`
 
 3. Enviar Firmware
 
@@ -89,7 +89,7 @@ para a porta correspondente ao Arduino.
 
 5. Executar
 
-py -3.12 cubo.py
+`py -3.12 cubo.py`
 
 Procedimento de Teste
 
