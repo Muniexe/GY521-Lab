@@ -5,12 +5,13 @@ from OpenGL.GLU import *
 
 import serial
 import math
+import csv
 
 # ==========================
 # CONFIG
 # ==========================
 
-PORTA = "COM3"
+PORTA = "COM4"
 BAUD = 115200
 
 ALPHA_ACCEL = 0.90
@@ -23,6 +24,28 @@ GYRO_DEADBAND = 0.5
 # ==========================
 
 arduino = serial.Serial(PORTA, BAUD)
+
+# ==========================
+# CSV
+# ==========================
+
+csv_file = open("dados.csv", "w", newline="")
+
+csv_writer = csv.writer(csv_file)
+
+csv_writer.writerow([
+    "tempo_ms",
+    "ax",
+    "ay",
+    "az",
+    "gx",
+    "gy",
+    "gz",
+    "pitch",
+    "roll",
+    "yaw",
+    "magnitude"
+])
 
 # ==========================
 # CALIBRAÇÃO
@@ -259,6 +282,29 @@ while True:
         # ------------------
 
         yaw += gz * dt * 0.5
+        
+        magnitude = math.sqrt(
+            ax * ax +
+            ay * ay	+
+            az * az
+            )
+        
+        csv_writer.writerow([
+            tempo_ms,
+            ax,
+            ay,
+            az,
+            gx,
+            gy,
+            gz,
+            pitch,
+            roll,
+            yaw,
+            magnitude])
+        csv_file.flush()
+            
+        
+        
 
     except:
         pass
