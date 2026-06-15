@@ -28,34 +28,6 @@ Validar a coleta de dados do MPU6050 e identificar qual variável apresenta o me
 
 ![AY](Graficos/Eixo%20Y.png)
 
-## Análise
-
-### Magnitude
-
-- [ ] Possui picos claros
-- [ ] Possui ruído excessivo
-- [ ] Possui valores inválidos
-
-### Pitch
-
-- [ ] Possui padrão repetitivo
-- [ ] Possui baixa quantidade de ruído
-
-### Roll
-
-- [ ] Possui padrão repetitivo
-- [ ] Possui baixa quantidade de ruído
-
-### AX
-
-- [ ] Possui padrão repetitivo
-- [ ] Possui baixa quantidade de ruído
-
-### AY
-
-- [ ] Possui padrão repetitivo
-- [ ] Possui baixa quantidade de ruído
-
 ## Conclusão
 
 Variável candidata para detecção de passos:
