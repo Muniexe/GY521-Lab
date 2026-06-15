@@ -89,7 +89,7 @@ para a porta correspondente ao Arduino.
 
 5. Executar
 
-`py -3.12 cubo.py`
+`py -3.12 vizualizador.py`
 
 Procedimento de Teste
 
