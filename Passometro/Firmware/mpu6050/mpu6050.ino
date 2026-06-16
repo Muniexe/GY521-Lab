@@ -4,7 +4,7 @@ const int MPU = 0x68;
 
 void setup() {
 
-  Wire.begin();
+  Wire.begin(21, 22);
   Serial.begin(115200);
 
   // Desperta o MPU6050

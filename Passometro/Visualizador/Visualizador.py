@@ -11,7 +11,7 @@ import csv
 # CONFIG
 # ==========================
 
-PORTA = "COM4"
+PORTA = "COM28"
 BAUD = 115200
 
 ALPHA_ACCEL = 0.90
