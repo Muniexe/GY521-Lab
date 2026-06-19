@@ -23,13 +23,18 @@ GYRO_DEADBAND = 0.5
 # SERIAL
 # ==========================
 
-arduino = serial.Serial(PORTA, BAUD)
+arduino = serial.Serial(
+    PORTA,
+    BAUD,
+    timeout=0.01
+)
 
 # ==========================
 # CSV
 # ==========================
 
 csv_file = open("dados.csv", "w", newline="")
+contador_csv = 0
 
 csv_writer = csv.writer(csv_file)
 
@@ -62,15 +67,21 @@ samples = 300
 
 for i in range(samples):
 
-    linha = arduino.readline().decode().strip()
-
     try:
+
+        linha = arduino.readline().decode(
+            errors='ignore'
+        ).strip()
+
         valores = linha.split(',')
 
         if len(valores) != 7:
             continue
 
-        ax, ay, az, gx, gy, gz, tempo = map(float, valores)
+        ax, ay, az, gx, gy, gz, tempo = map(
+            float,
+            valores
+        )
 
         gx_offset += gx
         gy_offset += gy
@@ -138,6 +149,7 @@ def desenhar_cubo():
 # ==========================
 
 pygame.init()
+clock = pygame.time.Clock()
 
 display = (1000, 700)
 
@@ -169,6 +181,10 @@ pitch = 0
 roll = 0
 yaw = 0
 
+pitch_draw = 0
+roll_draw = 0
+yaw_draw = 0
+
 tempo_anterior = None
 
 # ==========================
@@ -178,14 +194,21 @@ tempo_anterior = None
 while True:
 
     for event in pygame.event.get():
-
         if event.type == pygame.QUIT:
+            csv_file.flush()
+            csv_file.close()
+
             pygame.quit()
             quit()
 
     try:
 
-        linha = arduino.readline().decode().strip()
+        if not arduino.in_waiting:
+            continue
+
+        linha = arduino.readline().decode(
+            errors='ignore'
+        ).strip()
 
         valores = linha.split(',')
 
@@ -282,6 +305,10 @@ while True:
         # ------------------
 
         yaw += gz * dt * 0.5
+
+        pitch_draw = 0.9 * pitch_draw + 0.1 * pitch
+        roll_draw  = 0.9 * roll_draw  + 0.1 * roll
+        yaw_draw   = 0.9 * yaw_draw   + 0.1 * yaw
         
         magnitude = math.sqrt(
             ax * ax +
@@ -301,13 +328,18 @@ while True:
             roll,
             yaw,
             magnitude])
-        csv_file.flush()
+        contador_csv += 1
+
+        if contador_csv >= 100:
+            csv_file.flush()
+            contador_csv = 0
             
+    
         
         
 
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     # ======================
     # RENDER
@@ -329,5 +361,5 @@ while True:
     glPopMatrix()
 
     pygame.display.flip()
-
-    pygame.time.wait(5)
+    
+    clock.tick(5)
