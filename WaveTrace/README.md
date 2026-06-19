@@ -1,4 +1,4 @@
-# Marine IMU
+# Wave Trace
 
 Sistema de monitoramento de orientação para embarcações utilizando MPU6050 e ESP32.
 
