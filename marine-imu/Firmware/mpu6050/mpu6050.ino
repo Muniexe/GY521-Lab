@@ -7,6 +7,10 @@ const int SD_CS = 5;   // Pino CS do módulo SD
 
 File arquivo;
 
+int retorna1(){
+  return 1;
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -80,6 +84,8 @@ void loop() {
   Wire.endTransmission(false);
 
   Wire.requestFrom(MPU, 14, true);
+
+  retorna1();
 
   if (Wire.available() < 14) {
     return;
