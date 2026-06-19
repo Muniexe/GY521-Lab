@@ -1,19 +1,21 @@
 # Marine IMU
 
-Sistema de monitoramento de orientação para embarcações utilizando MPU6050 e Arduino.
+Sistema de monitoramento de orientação para embarcações utilizando MPU6050 e ESP32.
 
 ## Objetivo
 
-Este projeto foi desenvolvido para medir a orientação de uma embarcação em tempo real através de uma IMU MPU6050.
+Este projeto foi desenvolvido para medir e registrar a orientação de uma embarcação em tempo real através de uma IMU MPU6050.
 
-O sistema realiza a leitura do acelerômetro e giroscópio, aplica algoritmos de fusão sensorial e disponibiliza os dados para visualização em um computador.
+O sistema realiza a leitura do acelerômetro e giroscópio, armazena os dados em um cartão SD e permite sua análise posterior através de ferramentas de visualização e replay.
 
 Os principais objetivos são:
 
 - Medição de Roll (inclinação lateral)
 - Medição de Pitch (inclinação longitudinal)
+- Estimativa de Yaw
 - Monitoramento de trim da embarcação
 - Estudos de estabilidade
+- Registro de movimento durante navegação
 - Desenvolvimento de instrumentação náutica de baixo custo
 
 ---
@@ -22,63 +24,85 @@ Os principais objetivos são:
 
 ### Componentes
 
-- Arduino Uno
+- ESP32
 - MPU6050 (GY-521)
-- Cabo USB
-- Computador para visualização dos dados
+- Módulo MicroSD
+- Cartão MicroSD
+- Computador para análise dos dados
 
 ### Ligações
 
-| MPU6050 | Arduino Uno |
+#### MPU6050
+
+| MPU6050 | ESP32 |
 |----------|----------|
-| VCC | 5V |
+| VCC | 3.3V |
 | GND | GND |
-| SDA | A4 |
-| SCL | A5 |
+| SDA | GPIO 21 |
+| SCL | GPIO 22 |
+
+#### Módulo SD
+
+| SD | ESP32 |
+|----------|----------|
+| VCC | 3.3V |
+| GND | GND |
+| CS | GPIO 5 |
+| MOSI | GPIO 23 |
+| MISO | GPIO 19 |
+| SCK | GPIO 18 |
 
 ---
 
-## Software
-
-### Firmware
+## Firmware
 
 O firmware é responsável por:
 
 - Configurar o MPU6050
 - Ler acelerômetro e giroscópio
 - Converter os dados para unidades físicas
-- Transmitir os dados via Serial
+- Registrar os dados em cartão SD
+- Transmitir os dados via Serial para depuração
 
-Formato enviado:
+Formato registrado:
 
 ```text
-ax,ay,az,gx,gy,gz,timestamp
+ax,ay,az,gx,gy,gz,tempo_ms
 ```
 
 Exemplo:
 
 ```text
-0.012,-0.031,0.998,0.15,-0.21,0.08,12345
+0.0123,-0.0314,0.9981,0.1526,-0.2147,0.0814,12345
+```
+
+Taxa de aquisição:
+
+```text
+100 Hz (1 amostra a cada 10 ms)
 ```
 
 ---
 
 ## Visualizador
 
-O software de visualização recebe os dados da porta serial e calcula a orientação da embarcação.
+O software de visualização recebe os dados e calcula a orientação da embarcação.
 
-Atualmente são avaliados:
+Funcionalidades atuais:
 
-- Filtro Complementar
-- Filtro Mahony
-- Filtro Madgwick
+- Visualização 3D em OpenGL
+- Cálculo de Pitch
+- Cálculo de Roll
+- Estimativa de Yaw
+- Filtro complementar
+- Registro de dados para análise
 
-Critérios de comparação:
+Tecnologias utilizadas:
 
-- Estabilidade
-- Drift
-- Consumo computacional
-- Facilidade de implementação
+- Python
+- PyGame
+- PyOpenGL
+- PySerial
 
 ---
 
@@ -88,10 +112,13 @@ Critérios de comparação:
 marine-imu/
 │
 ├── firmware/
-│   └── mpu6050.ino
+│   └── esp32_mpu6050_sd.ino
 │
 ├── visualizer/
 │   └── Visualizador.py
+│
+├── data/
+│   └── dados.csv
 │
 ├── docs/
 │
@@ -105,26 +132,57 @@ marine-imu/
 - [x] Comunicação MPU6050
 - [x] Leitura de acelerômetro
 - [x] Leitura de giroscópio
-- [x] Comunicação serial
+- [x] Comunicação Serial
+- [x] Registro em cartão SD
+- [x] Timestamp por amostra
 - [x] Visualização 3D
-- [x] Filtro Complementar
+- [x] Filtro complementar
+- [x] Calibração de offset do giroscópio
+- [x] Exportação CSV
+
+### Em desenvolvimento
+
+- [ ] Replay de navegação
+- [ ] Timeline temporal
+- [ ] Detecção automática de eventos
+- [ ] Estatísticas de estabilidade
 - [ ] Filtro Mahony
 - [ ] Filtro Madgwick
-- [ ] Calibração automática
 - [ ] Interface gráfica avançada
 
 ---
 
-## Aplicações Futuras
+## Aplicações
 
-- Monitor de trim em embarcações
-- Registro de movimento
-- Sistema de estabilização
-- Instrumentação náutica
-- Estudos de comportamento em navegação
+- Monitor de trim
+- Estudos de estabilidade
+- Registro de movimento da embarcação
+- Instrumentação náutica experimental
+- Pesquisa em sensores inerciais
+- Caixa-preta simplificada para embarcações
+
+---
+
+## Roadmap
+
+### Replay de Navegação
+
+Planeja-se implementar um sistema capaz de:
+
+- Ler arquivos CSV gravados pelo ESP32
+- Reproduzir a navegação em tempo real
+- Exibir uma timeline interativa
+- Detectar eventos relevantes
+- Gerar estatísticas automáticas
 
 ---
 
 ## Licença
 
 Projeto desenvolvido para fins educacionais, pesquisa e experimentação.
+
+---
+
+## Autor
+
+Desenvolvido por Eduardo Muniz como parte de estudos em sistemas embarcados, sensores inerciais e instrumentação náutica.

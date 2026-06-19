@@ -1,188 +1,124 @@
-# Marine IMU
+# Passômetro / Visualizador MPU-6050
 
-Sistema de monitoramento de orientação para embarcações utilizando MPU6050 e ESP32.
+Objetivo
 
-## Objetivo
+Este projeto utiliza o sensor GY-521 (MPU-6050) para:
 
-Este projeto foi desenvolvido para medir e registrar a orientação de uma embarcação em tempo real através de uma IMU MPU6050.
+Coletar dados de aceleração e velocidade angular.
+Visualizar a orientação do sensor em tempo real através de um cubo 3D.
+Servir como base para o desenvolvimento de um p
+assômetro.
+Servir como etapa de pesquisa para aplicações futuras em cálculo de trim de embarcações.
 
-O sistema realiza a leitura do acelerômetro e giroscópio, armazena os dados em um cartão SD e permite sua análise posterior através de ferramentas de visualização e replay.
+Hardware Utilizado
+| Componente        | Função                       |
+| ----------------- | ---------------------------- |
+| Arduino Uno       | Aquisição dos dados          |
+| GY-521 (MPU-6050) | Sensor inercial              |
+| Cabo USB          | Comunicação serial           |
+| Computador        | Processamento e visualização |
 
-Os principais objetivos são:
+Ligações
+GY-521      Arduino Uno
 
-- Medição de Roll (inclinação lateral)
-- Medição de Pitch (inclinação longitudinal)
-- Estimativa de Yaw
-- Monitoramento de trim da embarcação
-- Estudos de estabilidade
-- Registro de movimento durante navegação
-- Desenvolvimento de instrumentação náutica de baixo custo
+VCC   ----> 5V
+GND   ----> GND
+SDA   ----> A4
+SCL   ----> A5
 
----
+Técnicas Utilizadas
+Filtro Digital do MPU-6050
 
-## Hardware
+Foi configurado o DLPF interno do sensor para reduzir ruído de alta frequência.
 
-### Componentes
+Calibração do Giroscópio
 
-- ESP32
-- MPU6050 (GY-521)
-- Módulo MicroSD
-- Cartão MicroSD
-- Computador para análise dos dados
+Ao iniciar o programa:
 
-### Ligações
+Mantenha o sensor parado...
 
-#### MPU6050
+são coletadas 300 amostras para cálculo dos offsets.
 
-| MPU6050 | ESP32 |
-|----------|----------|
-| VCC | 3.3V |
-| GND | GND |
-| SDA | GPIO 21 |
-| SCL | GPIO 22 |
+Filtro Passa-Baixa
 
-#### Módulo SD
+Aplicado aos dados do acelerômetro para reduzir jitte
+Filtro Complementar
 
-| SD | ESP32 |
-|----------|----------|
-| VCC | 3.3V |
-| GND | GND |
-| CS | GPIO 5 |
-| MOSI | GPIO 23 |
-| MISO | GPIO 19 |
-| SCK | GPIO 18 |
+Combina:
 
----
+estabilidade de longo prazo do acelerômetro;
+resposta rápida do giroscópio.
 
-## Firmware
+A equação utilizada é:
 
-O firmware é responsável por:
+θ=0.98(θ+ωΔt)+0.02θ
+acc
 
-- Configurar o MPU6050
-- Ler acelerômetro e giroscópio
-- Converter os dados para unidades físicas
-- Registrar os dados em cartão SD
-- Transmitir os dados via Serial para depuração
+Como Executar
+1. Instalar Python
 
-Formato registrado:
+Versão recomendada:
 
-```text
-ax,ay,az,gx,gy,gz,tempo_ms
-```
+Python 3.12
 
-Exemplo:
+2. Instalar Dependências
+`py -3.12 -m pip install pygame`
+`py -3.12 -m pip install pyserial`
+`py -3.12 -m pip install PyOpenGL`
+`py -3.12 -m pip install PyOpenGL_accelerate`
 
-```text
-0.0123,-0.0314,0.9981,0.1526,-0.2147,0.0814,12345
-```
+3. Enviar Firmware
 
-Taxa de aquisição:
+Abra:
 
-```text
-100 Hz (1 amostra a cada 10 ms)
-```
+firmware/mpu6050.ino
 
----
+e envie para o Arduino Uno.
 
-## Visualizador
+4. Configurar Porta Serial
 
-O software de visualização recebe os dados e calcula a orientação da embarcação.
+No arquivo:
 
-Funcionalidades atuais:
+visualizador/cubo.py
 
-- Visualização 3D em OpenGL
-- Cálculo de Pitch
-- Cálculo de Roll
-- Estimativa de Yaw
-- Filtro complementar
-- Registro de dados para análise
+alterar:
 
-Tecnologias utilizadas:
+PORTA = "COM3"
 
-- Python
-- PyGame
-- PyOpenGL
-- PySerial
+para a porta correspondente ao Arduino.
 
----
+5. Executar
 
-## Estrutura do Projeto
+`py -3.12 vizualizador.py`
 
-```text
-marine-imu/
-│
-├── firmware/
-│   └── esp32_mpu6050_sd.ino
-│
-├── visualizer/
-│   └── Visualizador.py
-│
-├── data/
-│   └── dados.csv
-│
-├── docs/
-│
-└── README.md
-```
+Procedimento de Teste
 
----
+Teste 1 – Sensor Parado
 
-## Estado Atual
+Posicionar o sensor sobre uma superfície plana.
 
-- [x] Comunicação MPU6050
-- [x] Leitura de acelerômetro
-- [x] Leitura de giroscópio
-- [x] Comunicação Serial
-- [x] Registro em cartão SD
-- [x] Timestamp por amostra
-- [x] Visualização 3D
-- [x] Filtro complementar
-- [x] Calibração de offset do giroscópio
-- [x] Exportação CSV
+Resultado esperado:
 
-### Em desenvolvimento
+Cubo estável.
+Pequena oscilação residual.
+Sem rotações espontâneas significativas.
 
-- [ ] Replay de navegação
-- [ ] Timeline temporal
-- [ ] Detecção automática de eventos
-- [ ] Estatísticas de estabilidade
-- [ ] Filtro Mahony
-- [ ] Filtro Madgwick
-- [ ] Interface gráfica avançada
+Teste 2 – Inclinação
 
----
+Inclinar lentamente:
 
-## Aplicações
+Frente e trás.
+Esquerda e direita.
 
-- Monitor de trim
-- Estudos de estabilidade
-- Registro de movimento da embarcação
-- Instrumentação náutica experimental
-- Pesquisa em sensores inerciais
-- Caixa-preta simplificada para embarcações
+Resultado esperado:
 
----
+Cubo acompanha os movimentos.
 
-## Roadmap
+Teste 3 – Rotação
 
-### Replay de Navegação
+Rotacionar o sensor em torno do eixo vertical.
 
-Planeja-se implementar um sistema capaz de:
+Resultado esperado:
 
-- Ler arquivos CSV gravados pelo ESP32
-- Reproduzir a navegação em tempo real
-- Exibir uma timeline interativa
-- Detectar eventos relevantes
-- Gerar estatísticas automáticas
-
----
-
-## Licença
-
-Projeto desenvolvido para fins educacionais, pesquisa e experimentação.
-
----
-
-## Autor
-
-Desenvolvido por Eduardo Muniz como parte de estudos em sistemas embarcados, sensores inerciais e instrumentação náutica.
+Cubo acompanha a rotação.
+Pode ocorrer drift gradual devido à ausência de magnetômetro.
