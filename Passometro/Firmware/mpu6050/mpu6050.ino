@@ -1,93 +1,119 @@
-#include <Wire.h>
+/**
+ * ============================================================
+ *  Serial BMS — ESP32 DevKit V1 + USBConverter + BMS
+ *  Baud Rate: ??? 
+ * ============================================================
+ *  PINAGEM:
+ *    RX   → GPIO 16
+ *    TX → GPIO 17
+ * ============================================================
+ */
 
-const int MPU = 0x68;
+#define RX2_PIN       16    // GPIO_16
+#define TX2_PIN       17    // GPIO_17
+                            // obs: Lembrar que a conexão é TX_conv -> RX_esp | RX_conv -> TX_esp
+#define BMS_BAUD_RATE 250000  // Necessário testar 9600, 19200, 38400, 57600, 115200 (Apenas trocar o valor no define BMS_BAUD_RATE)
+                            // Não sabemos qual o baud rate da serial do BMS
+#define MSG_MAX_LEN   512   // Caso apareça "[WARN] Buffer overflow", aumentar para 1024 ou para o necessário
+
+String  buffer        = "";
+uint32_t frameCount   = 0;
 
 void setup() {
-
-  Wire.begin(21, 22);
   Serial.begin(115200);
-
-  // Desperta o MPU6050
-  Wire.beginTransmission(MPU);
-  Wire.write(0x6B);
-  Wire.write(0x00);
-  Wire.endTransmission(true);
-
-  // Configura DLPF (42 Hz)
-  Wire.beginTransmission(MPU);
-  Wire.write(0x1A);
-  Wire.write(0x03);
-  Wire.endTransmission(true);
-
-  // Giroscópio ±250 °/s
-  Wire.beginTransmission(MPU);
-  Wire.write(0x1B);
-  Wire.write(0x00);
-  Wire.endTransmission(true);
-
-  // Acelerômetro ±2g
-  Wire.beginTransmission(MPU);
-  Wire.write(0x1C);
-  Wire.write(0x00);
-  Wire.endTransmission(true);
-
-  delay(1000);
+  Serial2.begin(BMS_BAUD_RATE, SERIAL_8N1, RX2_PIN, TX2_PIN);
 }
 
 void loop() {
+  while (Serial2.available() > 0) {
+    char c = (char)Serial2.read();
 
-  int16_t AcX, AcY, AcZ;
-  int16_t GyX, GyY, GyZ;
+    if (c == '\n') {
+      buffer.trim();
 
-  Wire.beginTransmission(MPU);
-  Wire.write(0x3B);
-  Wire.endTransmission(false);
+      if (buffer.length() > 0) {
+        frameCount++;
+        Serial.print("┌─ Mensagem #");
+        Serial.print(frameCount);
+        Serial.print("  |  raw: ");
+        Serial.println(buffer);
+        Serial.println("│");
 
-  Wire.requestFrom(MPU, 14, true);
+        parsearCSV(buffer);
 
-  AcX = Wire.read() << 8 | Wire.read();
-  AcY = Wire.read() << 8 | Wire.read();
-  AcZ = Wire.read() << 8 | Wire.read();
+        Serial.println("└────────────────────────────────────────────\n");
+        buffer = "";
+      }
 
-  // Ignora temperatura
-  Wire.read();
-  Wire.read();
+    } else {
+      if (buffer.length() < MSG_MAX_LEN) {
+        buffer += c;
+      } else {
+        Serial.println("[WARN] Buffer overflow — linha descartada.");
+        buffer = "";
+      }
+    }
+  }
+}
 
-  GyX = Wire.read() << 8 | Wire.read();
-  GyY = Wire.read() << 8 | Wire.read();
-  GyZ = Wire.read() << 8 | Wire.read();
+void parsearCSV(String linha) {
+  uint8_t  indiceCampo = 0;
+  String   campo       = "";
 
-  // Converte para unidades físicas
+  linha += ",";
 
-  float ax = AcX / 16384.0;
-  float ay = AcY / 16384.0;
-  float az = AcZ / 16384.0;
+  for (uint16_t i = 0; i < linha.length(); i++) {
+    char c = linha.charAt(i);
 
-  float gx = GyX / 131.0;
-  float gy = GyY / 131.0;
-  float gz = GyZ / 131.0;
+    if (c == ',') {
+      campo.trim();
 
-  unsigned long tempo = millis();
+      Serial.print("│  [");
+      // Padding do índice para alinhar a saída
+      if (indiceCampo < 10) Serial.print("0");
+      Serial.print(indiceCampo);
+      Serial.print("]  valor: \"");
+      Serial.print(campo);
+      Serial.print("\"");
 
-  Serial.print(ax, 4);
-  Serial.print(",");
+      // Preenche espaços para alinhar a coluna de tipo
+      int padding = 20 - campo.length();
+      for (int p = 0; p < padding; p++) Serial.print(" ");
 
-  Serial.print(ay, 4);
-  Serial.print(",");
+      Serial.print("  tipo: ");
+      Serial.println(inferirTipo(campo));
 
-  Serial.print(az, 4);
-  Serial.print(",");
+      indiceCampo++;
+      campo = "";
+    } else {
+      campo += c;
+    }
+  }
 
-  Serial.print(gx, 4);
-  Serial.print(",");
+  Serial.print("│\n│  Total de campos: ");
+  Serial.println(indiceCampo);
+}
 
-  Serial.print(gy, 4);
-  Serial.print(",");
+String inferirTipo(String valor) {
+  if (valor.length() == 0) return "VAZIO";
 
-  Serial.print(gz, 4);
-  Serial.print(",");
+  bool temDígito  = false;
+  bool temPonto   = false;
+  bool temLetra   = false;
+  bool temMinus   = false;
 
-  Serial.println(tempo);
+  for (uint8_t i = 0; i < valor.length(); i++) {
+    char c = valor.charAt(i);
+    if (isDigit(c))               temDígito = true;
+    else if (c == '.')            temPonto  = true;
+    else if (c == '-' && i == 0)  temMinus  = true;
+    else if (isAlpha(c))          temLetra  = true;
+  }
 
-  delay(10); // ~100 Hz
+  if (temLetra  && !temDígito)           return "STRING";
+  if (temLetra  &&  temDígito)           return "ALFANUM";
+  if (temDígito && !temPonto)            return "INT    ";
+  if (temDígito &&  temPonto)            return "FLOAT  ";
+
+  return "DESCONHECIDO";
 }
